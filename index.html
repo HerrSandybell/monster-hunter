@@ -30,7 +30,7 @@
         </div>
     </section>
     <section class="row controls"
-            v-if="(monster.hp === 0 || player.hp === 0)">
+            v-if="!isRunning">
         <div class="small-12 columns">
             <button id="start-game" @click="startGame()">START NEW GAME</button>
         </div>
@@ -64,7 +64,8 @@
             monster: {
                 hp: 0
             },
-            combatLog: []
+            combatLog: [],
+            isRunning: false
         },
         computed: {
             playerLog: function(damage) {
@@ -78,6 +79,7 @@
         },
         methods: {
             startGame: function() {
+                this.isRunning = true;
                 this.player.hp = 100;
                 this.monster.hp = 100;
                 this.combatLog = [];
@@ -128,10 +130,15 @@
                 this.combatLog.unshift({message: msg, class: cls})
             },
             checkEnd: function(){
-                if (this.player.hp <= 0) 
+                if (this.player.hp <= 0) {
                     this.player.hp = 0;
-                if (this.monster.hp <= 0) 
+                    this.isRunning = false;
+                }
+                if (this.monster.hp <= 0) {
                     this.monster.hp = 0;
+                    this.isRunning = false;
+                }
+                    
 
                 if (this.player.hp === 0 && this.monster.hp === 0)
                     this.report('You killed each other.', "monster-turn")
