@@ -37,10 +37,10 @@
     </section>
     <section class="row controls" v-else>
         <div class="small-12 columns">
-            <button id="attack" @click="playRound(normalAttack)">ATTACK</button>
-            <button id="special-attack" @click="playRound(specialAttack)">SPECIAL ATTACK</button>
-            <button id="heal" @click="playRound(heal)">HEAL</button>
-            <button id="give-up" @click="playRound(giveUp)">GIVE UP</button>
+            <button id="attack" @click="normalAttack">ATTACK</button>
+            <button id="special-attack" @click="specialAttack">SPECIAL ATTACK</button>
+            <button id="heal" @click="heal">HEAL</button>
+            <button id="give-up" @click="giveUp">GIVE UP</button>
         </div>
     </section>
     <section class="row log">
@@ -86,44 +86,40 @@
             },
             normalAttack: function(){
                 // 2d6 + 4
-                damage = Math.round(((Math.random() * (5)) + 1)*2 + 4);
-                return damage;
+                let damage = Math.round(((Math.random() * (5)) + 1)*2 + 4);
+                this.monster.hp -= damage;
+                this.report(`You dealt ${damage} to the monster.`, "player-turn");
+                this.monsterAttack();
             },
             specialAttack: function(){
                 // 6d6
-                damage = Math.round(((Math.random() * (5)) + 1)*6);
-                return damage;  
+                let damage = Math.round(((Math.random() * (5)) + 1)*6);
+                this.monster.hp -= Math.round(((Math.random() * (5)) + 1)*6);
+                this.report(`You dealt ${damage} to the monster.`, "player-turn");
+                this.monsterAttack();
             },
             heal: function() {
                 // 4d8
-                heal = Math.round(((Math.random() * (7)) + 1)*-4);
-                return heal;
+                let heal = Math.round(((Math.random() * (7)) + 1)*4);
+                if ((this.player.hp + heal) > 100)
+                    heal = 100 - this.player.hp 
+                this.player.hp += heal;
+                this.report(`You healed ${heal}`, "player-turn");
+                this.monsterAttack();
             },
             giveUp: function() {
-                return 1000;
+                this.player.hp = 0;
+                this.report(`You give up`, "player-turn");
+                this.checkEnd();
             },
             monsterAttack: function(){
                 // 2d8 + 5
                 damage = Math.round(((Math.random() * (7)) + 1)*2 + 5);
-                return damage;
+                this.player.hp -= Math.round(((Math.random() * (7)) + 1)*2 + 5);
+                this.report(`The monster dealt ${damage} to you.`, "monster-turn")
+                this.checkEnd();
             },
             playRound: function(attack) {
-                let playerDamage = attack()
-                let monsterDamage = this.monsterAttack();
-                if (playerDamage > 100) {
-                    this.player.hp = 0;
-                    this.report(`You give up`, "player-turn");
-                } else if (playerDamage > 0) {
-                    this.player.hp -= monsterDamage;
-                    this.monster.hp -= playerDamage;
-                    this.report(`You dealt ${playerDamage} to the monster.`, "player-turn");
-                    this.report(`The monster dealt ${monsterDamage} to you.`, "monster-turn");                    
-                } else {
-                    this.player.hp -= playerDamage;
-                    this.player.hp -= monsterDamage;
-                    this.report(`You healed ${-playerDamage}`, "player-turn");
-                    this.report(`The monster dealt ${monsterDamage} to you.`, "monster-turn");  
-                }
                 this.checkEnd();
             },
             report: function(msg, cls) {
@@ -138,7 +134,6 @@
                     this.monster.hp = 0;
                     this.isRunning = false;
                 }
-                    
 
                 if (this.player.hp === 0 && this.monster.hp === 0)
                     this.report('You killed each other.', "monster-turn")
