@@ -12,42 +12,137 @@
         <div class="small-6 columns">
             <h1 class="text-center">YOU</h1>
             <div class="healthbar">
-                <div class="healthbar text-center" style="background-color: green; margin: 0; color: white;">
-
+                <div class="healthbar text-center" 
+                    style="background-color: green; margin: 0; color: white;"
+                    :style="{width: player.hp + '%'}">
                 </div>
             </div>
         </div>
         <div class="small-6 columns">
             <h1 class="text-center">MONSTER</h1>
             <div class="healthbar">
-                <div class="healthbar text-center" style="background-color: green; margin: 0; color: white;">
+                <div class="healthbar text-center" 
+                    style="background-color: green; margin: 0; color: white;"
+                    :style="{width: monster.hp + '%'}">
 
                 </div>
             </div>
         </div>
     </section>
-    <section class="row controls">
+    <section class="row controls"
+            v-if="(monster.hp === 0 || player.hp === 0)">
         <div class="small-12 columns">
-            <button id="start-game">START NEW GAME</button>
+            <button id="start-game" @click="startGame()">START NEW GAME</button>
         </div>
     </section>
-    <section class="row controls">
+    <section class="row controls" v-else>
         <div class="small-12 columns">
-            <button id="attack">ATTACK</button>
-            <button id="special-attack">SPECIAL ATTACK</button>
-            <button id="heal">HEAL</button>
-            <button id="give-up">GIVE UP</button>
+            <button id="attack" @click="playRound(normalAttack)">ATTACK</button>
+            <button id="special-attack" @click="playRound(specialAttack)">SPECIAL ATTACK</button>
+            <button id="heal" @click="playRound(heal)">HEAL</button>
+            <button id="give-up" @click="playRound(giveUp)">GIVE UP</button>
         </div>
     </section>
     <section class="row log">
         <div class="small-12 columns">
             <ul>
-                <li>
-
+                <li v-for="item in combatLog" :class="item.class">
+                    {{ item.message }}
                 </li>
             </ul>
         </div>
     </section>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script>
+    new Vue({
+        el: "#app",
+        data: {
+            player: {
+                hp: 0
+            },
+            monster: {
+                hp: 0
+            },
+            combatLog: []
+        },
+        computed: {
+            playerLog: function(damage) {
+                log = `<span class="player-turn">You dealt ${damage} to the monster.</span>`;
+                return log;
+            },
+            monsterLog: function(damage) {
+                log = `<span class="monster-turn">The monster dealt ${damage} to you.</span>`;
+                return log;
+            }
+        },
+        methods: {
+            startGame: function() {
+                this.player.hp = 100;
+                this.monster.hp = 100;
+                this.combatLog = [];
+            },
+            normalAttack: function(){
+                // 2d6 + 4
+                damage = Math.round(((Math.random() * (5)) + 1)*2 + 4);
+                return damage;
+            },
+            specialAttack: function(){
+                // 6d6
+                damage = Math.round(((Math.random() * (5)) + 1)*6);
+                return damage;  
+            },
+            heal: function() {
+                // 4d8
+                heal = Math.round(((Math.random() * (7)) + 1)*-4);
+                return heal;
+            },
+            giveUp: function() {
+                return 1000;
+            },
+            monsterAttack: function(){
+                // 2d8 + 5
+                damage = Math.round(((Math.random() * (7)) + 1)*2 + 5);
+                return damage;
+            },
+            playRound: function(attack) {
+                let playerDamage = attack()
+                let monsterDamage = this.monsterAttack();
+                if (playerDamage > 100) {
+                    this.player.hp = 0;
+                    this.report(`You give up`, "player-turn");
+                } else if (playerDamage > 0) {
+                    this.player.hp -= monsterDamage;
+                    this.monster.hp -= playerDamage;
+                    this.report(`You dealt ${playerDamage} to the monster.`, "player-turn");
+                    this.report(`The monster dealt ${monsterDamage} to you.`, "monster-turn");                    
+                } else {
+                    this.player.hp -= playerDamage;
+                    this.player.hp -= monsterDamage;
+                    this.report(`You healed ${-playerDamage}`, "player-turn");
+                    this.report(`The monster dealt ${monsterDamage} to you.`, "monster-turn");  
+                }
+                this.checkEnd();
+            },
+            report: function(msg, cls) {
+                this.combatLog.unshift({message: msg, class: cls})
+            },
+            checkEnd: function(){
+                if (this.player.hp <= 0) 
+                    this.player.hp = 0;
+                if (this.monster.hp <= 0) 
+                    this.monster.hp = 0;
+
+                if (this.player.hp === 0 && this.monster.hp === 0)
+                    this.report('You killed each other.', "monster-turn")
+                else if (this.player.hp === 0) 
+                    this.report('You have been defeated', "monster-turn")
+                else if (this.monster.hp === 0) 
+                    this.report('You have slain the monster!', "player-turn")
+                
+            }
+        }
+    })
+</script>
 </body>
 </html>
